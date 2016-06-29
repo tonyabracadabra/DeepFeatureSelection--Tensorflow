@@ -70,8 +70,9 @@ class SoftmaxLayer(object):
         self.input = input
 
         # Initiate the weight and biases for this layer
-        w = tf.Variable(tf.random_normal([n_in, n_out]), name='w')
-        b = tf.Variable(tf.random_normal([n_out]), name='b')
+        r = 4*np.sqrt(6.0/(n_in + n_out))
+        w = tf.Variable(tf.random_uniform([n_in, n_out], minval=-r, maxval=r))
+        b = tf.Variable(tf.zeros([n_out]), name='b')
 
         pred = tf.add(tf.matmul(input, w), b)
         ################

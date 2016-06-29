@@ -7,7 +7,7 @@ from dfs2 import DeepFeatureSelectionNew
 import numpy as np
 from sklearn.preprocessing import normalize
 
-# ourdataB = sio.loadmat("/home/REGENERON/xupeng.tong/newDataB_2labels.mat")
+ourdataB = sio.loadmat("/home/REGENERON/xupeng.tong/newDataB_2labels.mat")
 
 ourdataB = sio.loadmat("/Users/xupeng.tong/Documents/Data/OriginalData/newDataB_2labels.mat")
 
@@ -29,8 +29,8 @@ ops.reset_default_graph()
 E_adam = []
 # for i in xrange(10):
 
-dfsMLP = DeepFeatureSelectionNew(X_train, X_test, y_train, y_test, n_input=0, hidden_dims=[500],weight_init='mlp', learning_rate = 0.001, \
-								 epochs=100000, lambda1=0.01, lambda2=0.01, alpha1=0.01, alpha2=0.01, optimizer='Adam', print_step=500)
+dfsMLP = DeepFeatureSelectionNew(X_train, X_test, y_train, y_test, n_input=0, hidden_dims=[500],weight_init='mlp', learning_rate = 0.01, \
+								 epochs=100000, lambda1=0.01, lambda2=0.01, alpha1=0.01, alpha2=0.01, optimizer='Adam', print_step=100)
 dfsMLP.train(batch_size=2000)
 eliminated = np.where(abs(dfsMLP.selected_w)==0)
 E_adam.append(eliminated)
