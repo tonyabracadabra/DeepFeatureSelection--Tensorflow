@@ -1,0 +1,117 @@
+import tensorflow as tf
+from nncomponents import *
+from helpers import *
+from sda import StackedDenoisingAutoencoder
+
+class DeepFeatureSelectionNew:
+    def __init__(self, X_train, X_test, y_train, y_test, weight_init='sda', n_input = 2, hidden_dims=[1000], epochs=1000,
+                 lambda1=0.001, lambda2=1.0, alpha1=0.001, alpha2=0.0, learning_rate=0.1, optimizer='FTRL', print_step=1000):
+        # Initiate the input layer
+        
+        # Get the dimension of the input X
+        n_sample, n_feat = X_train.shape
+        n_classes = len(np.unique(y_train))
+        
+        self.epochs = epochs
+        self.n_input = n_input
+        self.print_step = print_step
+        
+        # Store up original value
+        self.X_train = X_train
+        self.y_train = one_hot(y_train)
+        self.X_test = X_test
+        self.y_test = one_hot(y_test)
+        
+        # Two variables with undetermined length is created
+        self.var_X = tf.placeholder(dtype=tf.float32, shape=[None, n_feat], name='x')
+        self.var_Y = tf.placeholder(dtype=tf.float32, shape=[None, n_classes], name='y')
+        
+        input_hidden = 0
+        self.L1_input, self.L2_input = 0, 0
+        # If there is no input layer
+        if n_input != 0:
+        # Create several one to one layers
+            self.input_layers = []
+            input_1to1 = self.var_X
+
+            # regularization terms on coefficients of input layer
+            L1_input, L2_input = [], []
+
+            for i in xrange(n_input):
+                self.input_layers.append(One2OneInputLayer(input_1to1))
+                input_1to1 = self.input_layers[-1].output
+                L1_input.append(tf.reduce_sum(tf.abs(self.input_layers[i].w)))
+                L2_input.append(tf.nn.l2_loss(self.input_layers[i].w))
+
+            input_hidden = self.input_layers[-1].output
+
+            # Add it up
+            self.L1_input = tf.add_n(L1_input)
+            self.L2_input = tf.add_n(L2_input)
+
+        else:
+            input_hidden = self.var_X
+        
+        # Create list of hidden layers
+        self.hidden_layers = []
+        # Initialize the network weights
+        weights, biases = init_layer_weight(hidden_dims, X_train, weight_init)
+                
+        # Create regularization terms on weights of hidden layers        
+        L1s, L2_sqrs = [], []
+        # Create hidden layers
+        for init_w, init_b in zip(weights, biases):
+            self.hidden_layers.append(DenseLayer(input_hidden, init_w, init_b))
+            input_hidden = self.hidden_layers[-1].output
+            L1s.append(tf.reduce_sum(tf.abs(self.hidden_layers[-1].w)))
+            L2_sqrs.append(tf.nn.l2_loss(self.hidden_layers[-1].w))
+        
+        # Final classification layer, variable Y is passed
+        self.softmax_layer = SoftmaxLayer(self.hidden_layers[-1].output, n_classes, self.var_Y)
+           
+        L1s.append(tf.reduce_sum(tf.abs(self.softmax_layer.w)))
+        L2_sqrs.append(tf.nn.l2_loss(self.softmax_layer.w))
+
+        self.L1 = tf.add_n(L1s)
+        self.L2_sqr = tf.add_n(L2_sqrs)
+        
+        # Cost with two regularization terms
+        self.cost = self.softmax_layer.cost \
+                    + lambda1*(1.0-lambda2)*0.5*self.L2_input + lambda1*lambda2*self.L1_input \
+                    + alpha1*(1.0-alpha2)*0.5 * self.L2_sqr + alpha1*alpha2*self.L1
+        
+        # FTRL optimizer is used to produce more zeros
+        # self.optimizer = tf.train.FtrlOptimizer(learning_rate=learning_rate).minimize(self.cost)
+        
+        self.optimizer = optimize(self.cost, learning_rate, optimizer)
+        
+        self.accuracy = self.softmax_layer.accuracy
+
+        self.y = self.softmax_layer.y
+        ##################
+        self.temp = self.softmax_layer.temp
+        
+    def train(self, batch_size=100):
+        sess = tf.Session()
+        self.sess = sess
+        sess.run(tf.initialize_all_variables())
+        
+        for i in xrange(self.epochs):
+            x_batch, y_batch = get_batch(self.X_train, self.y_train, batch_size)
+            sess.run(self.optimizer, feed_dict={self.var_X: x_batch, self.var_Y: y_batch})
+            if i % self.print_step == 0:
+                l = sess.run(self.cost, feed_dict={self.var_X: x_batch, self.var_Y: y_batch})
+                print('epoch {0}: global loss = {1}'.format(i, l))
+                self.selected_ws = [sess.run(self.input_layers[i].w) for i in xrange(self.n_input)]
+                print("Train accuracy:",sess.run(self.accuracy, feed_dict={self.var_X: self.X_train, self.var_Y: self.y_train}))
+                print("Test accuracy:",sess.run(self.accuracy, feed_dict={self.var_X: self.X_test, self.var_Y: self.y_test}))
+                ################
+                # print("Softmax:",sess.run(self.temp, feed_dict={self.var_X: self.X_test, self.var_Y: self.y_test}))
+        print(self.selected_ws)
+        print("Final test accuracy:",sess.run(self.accuracy, feed_dict={self.var_X: self.X_test, self.var_Y: self.y_test}))
+    
+    def refine_init_weight(self, threshold=0.001):
+        refined_w = np.copy(self.selected_ws)
+        refined_w[refined_w < threshold] = 0
+        self.input_layer.w.assign(refined_w)
+        print("Test accuracy refined:",self.sess.run(self.accuracy, feed_dict={self.var_X: self.X_test, self.var_Y: self.y_test}))
