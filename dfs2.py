@@ -4,7 +4,7 @@ from helpers import *
 from sda import StackedDenoisingAutoencoder
 
 class DeepFeatureSelectionNew:
-    def __init__(self, X_train, X_test, y_train, y_test, weight_init='sda', n_input = 2, hidden_dims=[1000], epochs=1000,
+    def __init__(self, X_train, X_test, y_train, y_test, weight_init='sda', n_input = 2, hidden_dims=[1000], activation='sigmoid',epochs=1000,
                  lambda1=0.001, lambda2=1.0, alpha1=0.001, alpha2=0.0, learning_rate=0.1, optimizer='FTRL', print_step=1000):
         # Initiate the input layer
         
@@ -61,7 +61,7 @@ class DeepFeatureSelectionNew:
         L1s, L2_sqrs = [], []
         # Create hidden layers
         for init_w, init_b in zip(weights, biases):
-            self.hidden_layers.append(DenseLayer(input_hidden, init_w, init_b))
+            self.hidden_layers.append(DenseLayer(input_hidden, init_w, init_b, activation=activation))
             input_hidden = self.hidden_layers[-1].output
             L1s.append(tf.reduce_sum(tf.abs(self.hidden_layers[-1].w)))
             L2_sqrs.append(tf.nn.l2_loss(self.hidden_layers[-1].w))
@@ -95,18 +95,22 @@ class DeepFeatureSelectionNew:
         sess = tf.Session()
         self.sess = sess
         sess.run(tf.initialize_all_variables())
-        
+        batch_generator = GenBatch(self.X_train, self.y_train, batch_size)
+        n_batch = batch_generator.n_batch
         for i in xrange(self.epochs):
-            x_batch, y_batch = get_batch(self.X_train, self.y_train, batch_size)
-            sess.run(self.optimizer, feed_dict={self.var_X: x_batch, self.var_Y: y_batch})
-            if i % self.print_step == 0:
-                l = sess.run(self.cost, feed_dict={self.var_X: x_batch, self.var_Y: y_batch})
-                print('epoch {0}: global loss = {1}'.format(i, l))
-                self.selected_ws = [sess.run(self.input_layers[i].w) for i in xrange(self.n_input)]
-                print("Train accuracy:",sess.run(self.accuracy, feed_dict={self.var_X: self.X_train, self.var_Y: self.y_train}))
-                print("Test accuracy:",sess.run(self.accuracy, feed_dict={self.var_X: self.X_test, self.var_Y: self.y_test}))
-                ################
-                # print("Softmax:",sess.run(self.temp, feed_dict={self.var_X: self.X_test, self.var_Y: self.y_test}))
+            # x_batch, y_batch = get_batch(self.X_train, self.y_train, batch_size)
+            batch_generator.resetIndex()
+            for j in xrange(n_batch+1):
+                x_batch, y_batch = batch_generator.get_batch()
+                sess.run(self.optimizer, feed_dict={self.var_X: x_batch, self.var_Y: y_batch})
+                if i % self.print_step == 0 and j == n_batch:
+                    l = sess.run(self.cost, feed_dict={self.var_X: x_batch, self.var_Y: y_batch})
+                    print('epoch {0}: global loss = {1}'.format(i, l))
+                    self.selected_ws = [sess.run(self.input_layers[i].w) for i in xrange(self.n_input)]
+                    print("Train accuracy:",sess.run(self.accuracy, feed_dict={self.var_X: self.X_train, self.var_Y: self.y_train}))
+                    print("Test accuracy:",sess.run(self.accuracy, feed_dict={self.var_X: self.X_test, self.var_Y: self.y_test}))
+                    ################
+                    # print("Softmax:",sess.run(self.temp, feed_dict={self.var_X: self.X_test, self.var_Y: self.y_test}))
         print(self.selected_ws)
         print("Final test accuracy:",sess.run(self.accuracy, feed_dict={self.var_X: self.X_test, self.var_Y: self.y_test}))
     

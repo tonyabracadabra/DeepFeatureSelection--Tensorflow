@@ -13,6 +13,8 @@ def activate(layer, name):
         return tf.nn.tanh(layer)
     elif name == 'relu':
         return tf.nn.relu(layer)
+    elif name == 'linear':
+        return layer
 
 def optimize(cost, learning_rate, optimizer):
     optimizer = {'FTRL':tf.train.FtrlOptimizer, 'Adam':tf.train.AdamOptimizer}[optimizer]
@@ -43,6 +45,28 @@ def init_layer_weight(dims, X, name):
     return weights, biases
     
 def get_batch(X, Y, size):
-        assert len(X) == len(Y)
-        a = np.random.choice(len(X), size, replace=False)
-        return X[a], Y[a]
+    assert len(X) == len(Y)
+    a = np.random.choice(len(X), size, replace=False)
+    return X[a], Y[a]
+
+class GenBatch():
+    """
+        class for generating batches
+    """
+    def __init__(self, X, y, batch_size):
+        self.X = X
+        self.Y = y
+        self.batch_size = batch_size
+        self.n_batch = (len(X) / batch_size)
+        self.index = 0
+
+    def get_batch(self):
+        batch_range = xrange(self.index, (self.index+1)*self.batch_size)
+        if self.index == self.n_batch:
+            batch_range = xrange(self.index, len(self.X))
+        self.index += 1
+
+        return self.X[batch_range], self.Y[batch_range]
+
+    def resetIndex(self):
+        self.index = 0
