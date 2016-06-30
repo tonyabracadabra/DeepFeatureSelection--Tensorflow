@@ -34,7 +34,7 @@ def init_layer_weight(dims, X, name):
         sda = StackedDenoisingAutoencoder(dims=dims)
         sda._fit(X)
         weights, biases = sda.weights, sda.biases
-    elif name == 'mlp':
+    elif name == 'uniform':
         n_in = X.shape[1]
         for d in dims:
             r = 4*np.sqrt(6.0/(n_in+d))

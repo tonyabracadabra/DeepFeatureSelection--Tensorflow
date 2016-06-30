@@ -9,7 +9,7 @@ from sklearn.preprocessing import normalize
 
 ourdataB = sio.loadmat("/home/REGENERON/xupeng.tong/newDataB_2labels.mat")
 
-ourdataB = sio.loadmat("/Users/xupeng.tong/Documents/Data/OriginalData/newDataB_2labels.mat")
+# ourdataB = sio.loadmat("/Users/xupeng.tong/Documents/Data/OriginalData/newDataB_2labels.mat")
 
 # digits = datasets.load_digits()
 
