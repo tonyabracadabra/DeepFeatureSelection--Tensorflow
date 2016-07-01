@@ -96,5 +96,5 @@ class DeepFeatureSelection:
     def refine_init_weight(self, threshold=0.001):
         refined_w = np.copy(self.selected_w)
         refined_w[refined_w < threshold] = 0
-        self.input_layer.w.assign(refined_w)
+        self.sess.run(self.input_layer.w.assign(refined_w))
         print("Test accuracy refined:",self.sess.run(self.accuracy, feed_dict={self.var_X: self.X_test, self.var_Y: self.y_test}))

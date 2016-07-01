@@ -17,7 +17,9 @@ def activate(layer, name):
         return layer
 
 def optimize(cost, learning_rate, optimizer):
-    optimizer = {'FTRL':tf.train.FtrlOptimizer, 'Adam':tf.train.AdamOptimizer}[optimizer]
+    optimizer = {'FTRL':tf.train.FtrlOptimizer, 'Adam':tf.train.AdamOptimizer, \
+                 'SGD':tf.train.GradientDescentOptimizer}[optimizer]
+
     return optimizer(learning_rate=learning_rate).minimize(cost)
 
 def one_hot(y):
