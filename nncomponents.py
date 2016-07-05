@@ -4,7 +4,7 @@ from helpers import *
 
 class One2OneInputLayer(object):
     # One to One Mapping!
-    def __init__(self, input):
+    def __init__(self, input, weight_init=None):
         """
             The second dimension of the input,
             for each input, each row is a sample
@@ -18,11 +18,13 @@ class One2OneInputLayer(object):
         
         # Initiate the weight for the input layer
         r = 4*np.sqrt(3.0/n_in)
-        w = tf.Variable(tf.random_uniform([n_in,],-r, r), name='w')
-        
-        self.w = w
+
+        if weight_init is None:
+            self.w = tf.Variable(tf.random_uniform([n_in,],-r, r), name='w')
+        else: 
+            self.w = tf.Variable(weight_init, name='w')
+
         self.output = self.w * self.input
-        self.params = [w]
     
 class DenseLayer(object):
     # Canonical dense layer

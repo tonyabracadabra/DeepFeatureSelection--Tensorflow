@@ -129,7 +129,7 @@ class DeepFeatureSelectionNew:
             #     break
         
         self.selected_ws = [sess.run(self.input_layers[i].w) for i in xrange(self.n_input)]
-        print("Input layer w: ", self.selected_ws)
+        # print("Input layer w: ", self.selected_ws)
         print("Final train accuracy:", self.train_Accs[-1])
         print("Final test accuracy:", self.test_Accs[-1])
 
