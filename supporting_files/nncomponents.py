@@ -1,17 +1,26 @@
+#!/usr/bin/env python
+
+__author__ = "Xupeng Tong"
+__copyright__ = "Copyright 2016, Deep Feature Selection at Regeneron"
+__email__ = "tongxupeng.cpu@gmail.com"
+
 import tensorflow as tf
 import numpy as np
 from helpers import *
 
 class One2OneInputLayer(object):
+    """ One to One input layer
+
+    Parameters
+    ----------
+
+    input: Tensor
+        The output from the last layer
+    weight_init:
+        initial value for weights
+    """
     # One to One Mapping!
     def __init__(self, input, weight_init=None):
-        """
-            The second dimension of the input,
-            for each input, each row is a sample
-            and each column is a feature, since 
-            this is one to one mapping, n_in equals 
-            the number of features
-        """
         n_in = input.get_shape()[1].value
         
         self.input = input
@@ -27,18 +36,19 @@ class One2OneInputLayer(object):
         self.output = self.w * self.input
     
 class DenseLayer(object):
-    # Canonical dense layer
+    """ Canonical dense layer
+
+    Parameters
+    ----------
+
+    input: Tensor
+        The output from the last layer
+    init_w: numpy array
+        initial value for weights
+    init_b: numpy array
+        initial value for b
+    """
     def __init__(self, input, init_w, init_b, activation='sigmoid'):
-        """
-            The second dimension of the input,
-            for each input, each row is a sample
-            and each column is a feature, since 
-            this is one to one mapping, n_in equals 
-            the number of features
-            
-            n_out defines how many nodes are there in the 
-            hidden layer
-        """
 
         n_in = input.get_shape()[1].value
         self.input = input
@@ -57,17 +67,19 @@ class DenseLayer(object):
         self.params = [w]
         
 class SoftmaxLayer(object):
+    """ Softmax layer for classification
+
+    Parameters
+    ----------
+
+    input: Tensor
+        The output from the last layer
+    n_out: int
+        Number of labels
+    y: numpy array
+        True label for the data
+    """
     def __init__(self, input, n_out, y):
-        """
-            The second dimension of the input,
-            for each input, each row is a sample
-            and each column is a feature, since 
-            this is one to one mapping, n_in equals 
-            the number of features
-            
-            n_out defines how many nodes are there in the 
-            hidden layer
-        """
         n_in = input.get_shape()[1].value
         self.input = input
 
@@ -77,9 +89,6 @@ class SoftmaxLayer(object):
         b = tf.Variable(tf.zeros([n_out]), name='b')
 
         pred = tf.add(tf.matmul(input, w), b)
-        ################
-        temp = tf.nn.softmax(pred)
-
         cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
 
         # Evaluate model
@@ -90,6 +99,4 @@ class SoftmaxLayer(object):
         self.w = w
         self.b = b
         self.cost = cost
-        ###############
-        self.temp = temp
         self.params= [w]
